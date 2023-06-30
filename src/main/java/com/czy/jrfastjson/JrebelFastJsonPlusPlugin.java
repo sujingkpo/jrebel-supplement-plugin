@@ -32,13 +32,13 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
                         SerializeConfig.getGlobalInstance().setAsmEnable(false);
                         log.infoEcho("Reset FastJson AsmEnable:" + SerializeConfig.globalInstance.isAsmEnable());
                     }
-                    if (SerializeConfig.getGlobalInstance().get(aClass) != null) {
+                    if (null != SerializeConfig.getGlobalInstance().get(aClass)) {
                         ObjectSerializer javaBeanSerializer = SerializeConfig.getGlobalInstance()
                                                                              .createJavaBeanSerializer(aClass);
                         SerializeConfig.getGlobalInstance().put(aClass, javaBeanSerializer);
                         log.infoEcho("Reload FastJson Serializer:" + aClass.getName());
                     }
-                    if (ParserConfig.getGlobalInstance().getDeserializer(aClass) != null) {
+                    if (null != ParserConfig.getGlobalInstance().getDeserializers().get(aClass)) {
                         ObjectDeserializer javaBeanDeserializer = ParserConfig.getGlobalInstance()
                                                                               .createJavaBeanDeserializer(aClass,
                                                                                                           aClass);
