@@ -28,7 +28,7 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
             @Override
             public void onClassEvent(int i, Class<?> aClass) {
                 if (i == 1 || i == 2) {
-                    if (SerializeConfig.globalInstance.isAsmEnable()) {
+                    if (SerializeConfig.getGlobalInstance().isAsmEnable()) {
                         SerializeConfig.getGlobalInstance().setAsmEnable(false);
                         log.infoEcho("Reset FastJson AsmEnable:" + SerializeConfig.globalInstance.isAsmEnable());
                     }
