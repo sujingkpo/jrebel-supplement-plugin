@@ -5,7 +5,7 @@
     <groupId>com.czy</groupId>
     <artifactId>jrebel-fastjson-plugin</artifactId>
     <name>JRebel FastJson Plugin</name>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <developers>
         <developer>
             <name>czy</name>
@@ -43,6 +43,12 @@
             <version>${sdk.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>3.5.2</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -56,6 +62,7 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
