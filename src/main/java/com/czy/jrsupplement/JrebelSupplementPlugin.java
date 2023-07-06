@@ -140,10 +140,9 @@ public class JrebelSupplementPlugin implements Plugin {
     }
 
     private static MappedStatement getMappedStatement(String _mn2, MappedStatement mappedStatement) {
-        MappedStatement.Builder builder = new MappedStatement.Builder(
-                mappedStatement.getConfiguration(), _mn2,
-                mappedStatement.getSqlSource(),
-                mappedStatement.getSqlCommandType());
+        MappedStatement.Builder builder = new MappedStatement.Builder(mappedStatement.getConfiguration(), _mn2,
+                                                                      mappedStatement.getSqlSource(),
+                                                                      mappedStatement.getSqlCommandType());
         builder.cache(mappedStatement.getCache());
         builder.databaseId(mappedStatement.getDatabaseId());
         builder.fetchSize(mappedStatement.getFetchSize());
@@ -227,8 +226,7 @@ public class JrebelSupplementPlugin implements Plugin {
         }
     }
 
-    private static TableInfo reInitTableInfoCache(Class<?> aClass,
-                                                  MapperBuilderAssistant mba) {
+    private static TableInfo reInitTableInfoCache(Class<?> aClass, MapperBuilderAssistant mba) {
         log.infoEcho("ReInit TableInfoCache:" + aClass.getName());
         return TableInfoHelper.initTableInfo(mba, aClass);
     }
@@ -327,17 +325,17 @@ public class JrebelSupplementPlugin implements Plugin {
 
     @Override
     public String getId() {
-        return "jrebelFastJsonPlusPlugin";
+        return "jrebel-supplement-plugin";
     }
 
     @Override
     public String getName() {
-        return "jrebelFastJsonPlusPlugin";
+        return "Jrebel Supplement Plugin";
     }
 
     @Override
     public String getDescription() {
-        return "<li>A hook plugin for Support fast_json that reloads.</li>";
+        return "<li>A hook plugin for Support fast_json, mybatis-plus that reloads.</li>";
     }
 
     @Override
@@ -347,7 +345,7 @@ public class JrebelSupplementPlugin implements Plugin {
 
     @Override
     public String getWebsite() {
-        return "https://github.com/sujingkpo";
+        return "https://github.com/sujingkpo/jrebel-supplement-plugin";
     }
 
     @Override
