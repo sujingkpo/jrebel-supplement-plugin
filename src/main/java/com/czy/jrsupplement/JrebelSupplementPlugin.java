@@ -1,4 +1,4 @@
-package com.czy.jrfastjson;
+package com.czy.jrsupplement;
 
 import com.alibaba.fastjson.parser.ParserConfig;
 import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
@@ -31,11 +31,13 @@ import java.util.stream.Collectors;
  * @author czy
  * @since 2023/6/30 12:03
  */
-public class JrebelFastJsonPlusPlugin implements Plugin {
+public class JrebelSupplementPlugin implements Plugin {
     private static final Logger log = LoggerFactory.getInstance();
     private static DefaultSqlInjector defaultSqlInjector;
-    private Boolean MybatisPlusPlugin = false;
-    private Integer loadedCount = 0;
+    private Boolean MYBATIS_PLUS_PLUGIN_ENABLE = false;
+    private Boolean FAST_JSON_PLUGIN_ENABLE = false;
+    private Integer MYBATIS_PLUS_PLUGIN_LOADED_COUNT = 0;
+    private Integer FAST_JSON_PLUGIN_LOADED_COUNT = 0;
 
     private static void mapperProxyFactoryRemove(Class<?> aClass, Configuration configuration) {
         List<Class<?>> mappers = configuration.getMapperRegistry().getMappers().stream().filter(aClass1 -> {
@@ -93,7 +95,7 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
                                   log.infoEcho("Remove MapperProxyFactory Cache:" + m.getName());
                                   MapperBuilderAssistant mba = new MapperBuilderAssistant(configuration, m.toString());
                                   mba.setCurrentNamespace(m.toString());
-                                  TableInfo tableInfo = reInitTableInfoCache(aClass, configuration, mba);
+                                  TableInfo tableInfo = reInitTableInfoCache(aClass, mba);
                                   List<AbstractMethod> methodList = defaultSqlInjector.getMethodList(m, tableInfo);
                                   Field methodName = Arrays.stream(AbstractMethod.class.getDeclaredFields())
                                                            .filter(v -> v.getName().equals("methodName"))
@@ -114,26 +116,9 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
                                               method.inject(mba, m, aClass, tableInfo);
                                               MappedStatement mappedStatement = configuration.getMappedStatement(_mn);
                                               if (mappedStatement != null) {
-                                                  MappedStatement.Builder builder = new MappedStatement.Builder(
-                                                          mappedStatement.getConfiguration(), _mn2,
-                                                          mappedStatement.getSqlSource(),
-                                                          mappedStatement.getSqlCommandType());
-                                                  builder.cache(mappedStatement.getCache());
-                                                  builder.databaseId(mappedStatement.getDatabaseId());
-                                                  builder.fetchSize(mappedStatement.getFetchSize());
-                                                  builder.flushCacheRequired(mappedStatement.isFlushCacheRequired());
-                                                  builder.keyGenerator(mappedStatement.getKeyGenerator());
-                                                  builder.lang(mappedStatement.getLang());
-                                                  builder.parameterMap(mappedStatement.getParameterMap());
-                                                  builder.resource(mappedStatement.getResource());
-                                                  builder.resultMaps(mappedStatement.getResultMaps());
-                                                  builder.resultOrdered(mappedStatement.isResultOrdered());
-                                                  builder.timeout(mappedStatement.getTimeout());
-                                                  builder.resultSetType(mappedStatement.getResultSetType());
-                                                  builder.statementType(mappedStatement.getStatementType());
-                                                  builder.useCache(mappedStatement.isUseCache());
-                                                  MappedStatement ms2 = builder.build();
+                                                  MappedStatement ms2 = getMappedStatement(_mn2, mappedStatement);
                                                   configuration.addMappedStatement(ms2);
+                                                  log.infoEcho("ReInject method:" + _mn2);
                                               }
                                               log.infoEcho("ReInject method:" + _mn);
                                           } catch (IllegalAccessException e) {
@@ -152,6 +137,28 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
                   });
         }
 
+    }
+
+    private static MappedStatement getMappedStatement(String _mn2, MappedStatement mappedStatement) {
+        MappedStatement.Builder builder = new MappedStatement.Builder(
+                mappedStatement.getConfiguration(), _mn2,
+                mappedStatement.getSqlSource(),
+                mappedStatement.getSqlCommandType());
+        builder.cache(mappedStatement.getCache());
+        builder.databaseId(mappedStatement.getDatabaseId());
+        builder.fetchSize(mappedStatement.getFetchSize());
+        builder.flushCacheRequired(mappedStatement.isFlushCacheRequired());
+        builder.keyGenerator(mappedStatement.getKeyGenerator());
+        builder.lang(mappedStatement.getLang());
+        builder.parameterMap(mappedStatement.getParameterMap());
+        builder.resource(mappedStatement.getResource());
+        builder.resultMaps(mappedStatement.getResultMaps());
+        builder.resultOrdered(mappedStatement.isResultOrdered());
+        builder.timeout(mappedStatement.getTimeout());
+        builder.resultSetType(mappedStatement.getResultSetType());
+        builder.statementType(mappedStatement.getStatementType());
+        builder.useCache(mappedStatement.isUseCache());
+        return builder.build();
     }
 
     private static void defaultReflectorRemove(Class<?> aClass, Configuration configuration) {
@@ -220,64 +227,44 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
         }
     }
 
-    private static TableInfo reInitTableInfoCache(Class<?> aClass, Configuration configuration,
+    private static TableInfo reInitTableInfoCache(Class<?> aClass,
                                                   MapperBuilderAssistant mba) {
         log.infoEcho("ReInit TableInfoCache:" + aClass.getName());
         return TableInfoHelper.initTableInfo(mba, aClass);
     }
 
+    private void forFastJson(Class<?> aClass) {
+        if (FAST_JSON_PLUGIN_ENABLE) {
+            if (SerializeConfig.getGlobalInstance().isAsmEnable()) {
+                SerializeConfig.getGlobalInstance().setAsmEnable(false);
+                log.infoEcho("Reset FastJson AsmEnable:" + SerializeConfig.globalInstance.isAsmEnable());
+            }
+            if (null != SerializeConfig.getGlobalInstance().get(aClass)) {
+                ObjectSerializer javaBeanSerializer = SerializeConfig.getGlobalInstance()
+                                                                     .createJavaBeanSerializer(aClass);
+                SerializeConfig.getGlobalInstance().put(aClass, javaBeanSerializer);
+                log.infoEcho("Reload FastJson Serializer:" + aClass.getName());
+            }
+            if (null != ParserConfig.getGlobalInstance().getDeserializers().get(aClass)) {
+                ObjectDeserializer javaBeanDeserializer = ParserConfig.getGlobalInstance()
+                                                                      .createJavaBeanDeserializer(aClass, aClass);
+                ParserConfig.getGlobalInstance().putDeserializer(aClass, javaBeanDeserializer);
+                log.infoEcho("Reload FastJson Deserializer:" + aClass.toString());
+            }
+        }
+
+    }
+
     @Override
     public void preinit() {
         log.infoEcho("Ready config JRebel FastJson plugin...");
-        IntegrationFactory.getInstance().addAfterMainCallback(() -> {
-            SerializeConfig.getGlobalInstance().setAsmEnable(false);
-            log.infoEcho("Init FastJson AsmEnable:" + SerializeConfig.getGlobalInstance().isAsmEnable());
-
-        });
-
+        fastJsonInit();
         ReloaderFactory.getInstance().addClassReloadListener(new ClassEventListener() {
             @Override
             public void onClassEvent(int i, Class<?> aClass) {
                 if (i == 1 || i == 2) {
-                    if (SerializeConfig.getGlobalInstance().isAsmEnable()) {
-                        SerializeConfig.getGlobalInstance().setAsmEnable(false);
-                        log.infoEcho("Reset FastJson AsmEnable:" + SerializeConfig.globalInstance.isAsmEnable());
-                    }
-                    if (null != SerializeConfig.getGlobalInstance().get(aClass)) {
-                        ObjectSerializer javaBeanSerializer = SerializeConfig.getGlobalInstance()
-                                                                             .createJavaBeanSerializer(aClass);
-                        SerializeConfig.getGlobalInstance().put(aClass, javaBeanSerializer);
-                        log.infoEcho("Reload FastJson Serializer:" + aClass.getName());
-                    }
-                    if (null != ParserConfig.getGlobalInstance().getDeserializers().get(aClass)) {
-                        ObjectDeserializer javaBeanDeserializer = ParserConfig.getGlobalInstance()
-                                                                              .createJavaBeanDeserializer(aClass,
-                                                                                                          aClass);
-                        ParserConfig.getGlobalInstance().putDeserializer(aClass, javaBeanDeserializer);
-                        log.infoEcho("Reload FastJson Deserializer:" + aClass.toString());
-                    }
-                    if (!MybatisPlusPlugin && loadedCount == 0) {
-                        loadedCount++;
-                        log.infoEcho("check MybatisPlusPlugin...");
-                        try {
-                            Class<?> aClass1 = Class.forName("com.baomidou.mybatisplus.core.MybatisConfiguration");
-                            MybatisPlusPlugin = true;
-                            defaultSqlInjector = new DefaultSqlInjector();
-                        } catch (ClassNotFoundException e) {
-                            MybatisPlusPlugin = false;
-                        }
-                        log.infoEcho("MybatisConfiguration:" + MybatisPlusPlugin);
-                    }
-                    if (MybatisPlusPlugin) {
-                        TableInfo tableInfo = TableInfoHelper.getTableInfo(aClass);
-                        if (!Objects.isNull(tableInfo)) {
-                            Configuration configuration = tableInfo.getConfiguration();
-                            removeTableInfoCache(aClass, tableInfo);
-                            defaultReflectorRemove(aClass, configuration);
-                            mapperProxyFactoryRemove(aClass, configuration);
-                        }
-                    }
-
+                    forFastJson(aClass);
+                    forMybatisPlus(aClass);
                 }
             }
 
@@ -288,9 +275,54 @@ public class JrebelFastJsonPlusPlugin implements Plugin {
         });
     }
 
+    private void fastJsonInit() {
+        if (!FAST_JSON_PLUGIN_ENABLE && FAST_JSON_PLUGIN_LOADED_COUNT == 0) {
+            FAST_JSON_PLUGIN_LOADED_COUNT++;
+            log.infoEcho("Check Fast Json Plugin...");
+            try {
+                Class.forName("com.alibaba.fastjson.serializer.SerializeConfig");
+                FAST_JSON_PLUGIN_ENABLE = true;
+            } catch (ClassNotFoundException e) {
+                FAST_JSON_PLUGIN_ENABLE = false;
+            }
+            log.infoEcho("Fast Json Plugin Enable:" + FAST_JSON_PLUGIN_ENABLE);
+        }
+        if (FAST_JSON_PLUGIN_ENABLE) {
+            IntegrationFactory.getInstance().addAfterMainCallback(() -> {
+                SerializeConfig.getGlobalInstance().setAsmEnable(false);
+                log.infoEcho("Init FastJson AsmEnable:" + SerializeConfig.getGlobalInstance().isAsmEnable());
+            });
+        }
+    }
+
+    private void forMybatisPlus(Class<?> aClass) {
+        if (!MYBATIS_PLUS_PLUGIN_ENABLE && MYBATIS_PLUS_PLUGIN_LOADED_COUNT == 0) {
+            MYBATIS_PLUS_PLUGIN_LOADED_COUNT++;
+            log.infoEcho("Check Mybatis Plus Plugin...");
+            try {
+                Class.forName("com.baomidou.mybatisplus.core.MybatisConfiguration");
+                MYBATIS_PLUS_PLUGIN_ENABLE = true;
+                defaultSqlInjector = new DefaultSqlInjector();
+            } catch (ClassNotFoundException e) {
+                MYBATIS_PLUS_PLUGIN_ENABLE = false;
+            }
+            log.infoEcho("Mybatis Plus Plugin Enable:" + MYBATIS_PLUS_PLUGIN_ENABLE);
+        }
+        if (MYBATIS_PLUS_PLUGIN_ENABLE) {
+            TableInfo tableInfo = TableInfoHelper.getTableInfo(aClass);
+            if (!Objects.isNull(tableInfo)) {
+                Configuration configuration = tableInfo.getConfiguration();
+                removeTableInfoCache(aClass, tableInfo);
+                defaultReflectorRemove(aClass, configuration);
+                mapperProxyFactoryRemove(aClass, configuration);
+            }
+        }
+    }
+
     @Override
     public boolean checkDependencies(ClassLoader classLoader, ClassResourceSource classResourceSource) {
-        return classResourceSource.getClassResource("com.alibaba.fastjson.serializer.SerializeConfig") != null;
+        return classResourceSource.getClassResource("com.alibaba.fastjson.serializer.SerializeConfig") != null ||
+               classResourceSource.getClassResource("com.baomidou.mybatisplus.core.MybatisConfiguration") != null;
     }
 
     @Override

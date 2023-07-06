@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.czy</groupId>
-    <artifactId>jrebel-fastjson-plugin</artifactId>
-    <name>JRebel FastJson Plugin</name>
-    <version>1.0.6</version>
+    <artifactId>jrebel-supplement-plugin</artifactId>
+    <name>Jrebel Supplement Plugin</name>
+    <version>1.0.7</version>
     <developers>
         <developer>
             <name>czy</name>
@@ -18,7 +18,7 @@
             <url>https://www.jrebel.com/</url>
         </developer>
     </developers>
-    <description>A hook for Support MybatisPlus that reloads modified SQL maps.</description>
+    <description>supplement that reloads</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sdk.version>7.0.0</sdk.version>
@@ -70,7 +70,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <JavaRebel-Plugin>com.czy.jrfastjson.JrebelFastJsonPlusPlugin</JavaRebel-Plugin>
+                            <JavaRebel-Plugin>com.czy.jrsupplement.JrebelSupplementPlugin</JavaRebel-Plugin>
                         </manifestEntries>
                     </archive>
                 </configuration>
