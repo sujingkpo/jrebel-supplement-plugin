@@ -255,7 +255,7 @@ public class JrebelSupplementPlugin implements Plugin {
 
     @Override
     public void preinit() {
-        log.infoEcho("Ready config JRebel FastJson plugin...");
+        log.infoEcho("Ready config JRebel Supplement plugin...");
         fastJsonInit();
         ReloaderFactory.getInstance().addClassReloadListener(new ClassEventListener() {
             @Override
