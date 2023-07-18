@@ -13,14 +13,20 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.override.MybatisMapperProxyFactory;
 import com.baomidou.mybatisplus.core.toolkit.ReflectionKit;
 import com.baomidou.mybatisplus.core.toolkit.reflect.GenericTypeUtils;
+import com.czy.jrsupplement.bean.BeanCopierCPB;
+import com.czy.jrsupplement.bean.BeanCopierReload;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.Reflector;
 import org.apache.ibatis.session.Configuration;
+import org.springframework.cglib.beans.BeanCopier;
+import org.springframework.cglib.core.ClassInfo;
 import org.zeroturnaround.javarebel.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -257,6 +263,7 @@ public class JrebelSupplementPlugin implements Plugin {
     public void preinit() {
         log.infoEcho("Ready config JRebel Supplement plugin...");
         fastJsonInit();
+
         ReloaderFactory.getInstance().addClassReloadListener(new ClassEventListener() {
             @Override
             public void onClassEvent(int i, Class<?> aClass) {
@@ -278,9 +285,17 @@ public class JrebelSupplementPlugin implements Plugin {
             FAST_JSON_PLUGIN_LOADED_COUNT++;
             log.infoEcho("Check Fast Json Plugin...");
             try {
-                Class.forName("com.alibaba.fastjson.serializer.SerializeConfig");
+                Class<?> aClass = Class.forName("com.alibaba.fastjson.serializer.SerializeConfig");
+                Method get = Arrays.stream(aClass.getDeclaredMethods())
+                                   .filter(m -> m.getName().equals("get"))
+                                   .findAny()
+                                   .orElse(null);
+                if (null == get) {
+                    throw new NoSuchMethodException();
+                }
                 FAST_JSON_PLUGIN_ENABLE = true;
-            } catch (ClassNotFoundException e) {
+
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
                 FAST_JSON_PLUGIN_ENABLE = false;
             }
             log.infoEcho("Fast Json Plugin Enable:" + FAST_JSON_PLUGIN_ENABLE);
@@ -320,7 +335,8 @@ public class JrebelSupplementPlugin implements Plugin {
     @Override
     public boolean checkDependencies(ClassLoader classLoader, ClassResourceSource classResourceSource) {
         return classResourceSource.getClassResource("com.alibaba.fastjson.serializer.SerializeConfig") != null ||
-               classResourceSource.getClassResource("com.baomidou.mybatisplus.core.MybatisConfiguration") != null;
+               classResourceSource.getClassResource("com.baomidou.mybatisplus.core.MybatisConfiguration") != null ||
+               classResourceSource.getClassResource("org.springframework.cglib.beans.BeanCopier") != null;
     }
 
     @Override
