@@ -5,7 +5,7 @@
     <groupId>com.czy</groupId>
     <artifactId>jrebel-supplement-plugin</artifactId>
     <name>Jrebel Supplement Plugin</name>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
     <developers>
         <developer>
             <name>czy</name>

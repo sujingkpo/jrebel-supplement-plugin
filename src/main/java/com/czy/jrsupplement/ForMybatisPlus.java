@@ -14,10 +14,12 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.Reflector;
 import org.apache.ibatis.session.Configuration;
+import org.springframework.beans.BeanUtils;
 import org.zeroturnaround.javarebel.Logger;
 import org.zeroturnaround.javarebel.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -224,14 +226,23 @@ public class ForMybatisPlus {
     }
 
     public static void reload(Class<?> aClass) {
-         if (!MYBATIS_PLUS_PLUGIN_ENABLE && MYBATIS_PLUS_PLUGIN_LOADED_COUNT == 0) {
+        if (!MYBATIS_PLUS_PLUGIN_ENABLE && MYBATIS_PLUS_PLUGIN_LOADED_COUNT == 0) {
             MYBATIS_PLUS_PLUGIN_LOADED_COUNT++;
             log.infoEcho("Check Mybatis Plus Plugin...");
             try {
                 Class.forName("com.baomidou.mybatisplus.core.MybatisConfiguration");
+                Class<?> tabinfoClass = Class.forName("com.baomidou.mybatisplus.core.metadata.TableInfo");
+                Method getConfiguration = tabinfoClass.getDeclaredMethod("getConfiguration");
+                Class<?> getConfigurationReturnType = getConfiguration.getReturnType();
+                if (getConfigurationReturnType.equals(MybatisConfiguration.class)) {
+                    MYBATIS_PLUS_PLUGIN_ENABLE = false;
+                    log.infoEcho("Mybatis Plus Plugin 版本过低，暂不支持");
+                    log.infoEcho("Mybatis Plus Plugin Enable:" + MYBATIS_PLUS_PLUGIN_ENABLE);
+                    return;
+                }
                 MYBATIS_PLUS_PLUGIN_ENABLE = true;
-                 defaultSqlInjector = new DefaultSqlInjector();
-            } catch (ClassNotFoundException e) {
+                defaultSqlInjector = new DefaultSqlInjector();
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
                 MYBATIS_PLUS_PLUGIN_ENABLE = false;
             }
             log.infoEcho("Mybatis Plus Plugin Enable:" + MYBATIS_PLUS_PLUGIN_ENABLE);
@@ -248,7 +259,6 @@ public class ForMybatisPlus {
     }
 
     public static void init() {
-
 
     }
 }
